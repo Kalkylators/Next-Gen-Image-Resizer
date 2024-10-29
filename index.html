@@ -5,9 +5,143 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NextGen Image Resizer</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="./assets/css/styles.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --bg: #0f172a;
+            --text: #e2e8f0;
+        }
 
-    </head>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+            background: linear-gradient(45deg, var(--primary), #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--primary);
+            border-radius: 1rem;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 2rem;
+        }
+
+        .upload-area:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .upload-area i {
+            font-size: 3rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .control-group {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #94a3b8;
+        }
+
+        input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 0.25rem;
+            color: var(--text);
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .preview {
+            margin-top: 2rem;
+            text-align: center;
+        }
+
+        #preview-image {
+            max-width: 100%;
+            border-radius: 0.5rem;
+            display: none;
+        }
+
+        .download-btn {
+            display: none;
+            margin-top: 1rem;
+            background: #10b981;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
 <body>
     <div class="container">
         <h1>NextGen Image Resizer</h1>
@@ -43,6 +177,92 @@
         </div>
     </div>
 
-      <script src="./assets/js/main.js"></script>        
+    <script>
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        const widthInput = document.getElementById('width');
+        const heightInput = document.getElementById('height');
+        const qualityInput = document.getElementById('quality');
+        const resizeBtn = document.getElementById('resize-btn');
+        const downloadBtn = document.getElementById('download-btn');
+        const previewImage = document.getElementById('preview-image');
+        
+        let originalImage = null;
+
+        // Handle drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#10b981';
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = '#6366f1';
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#6366f1';
+            const file = e.dataTransfer.files[0];
+            handleImageUpload(file);
+        });
+
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            handleImageUpload(file);
+        });
+
+        function handleImageUpload(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Please upload an image file');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                originalImage = new Image();
+                originalImage.src = e.target.result;
+                originalImage.onload = () => {
+                    widthInput.value = originalImage.width;
+                    heightInput.value = originalImage.height;
+                    previewImage.src = e.target.result;
+                    previewImage.style.display = 'block';
+                };
+            };
+            reader.readAsDataURL(file);
+        }
+
+        resizeBtn.addEventListener('click', () => {
+            if (!originalImage) {
+                alert('Please upload an image first');
+                return;
+            }
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = parseInt(widthInput.value) || originalImage.width;
+            canvas.height = parseInt(heightInput.value) || originalImage.height;
+            
+            ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+            
+            const quality = parseInt(qualityInput.value) / 100 || 0.9;
+            const resizedImage = canvas.toDataURL('image/jpeg', quality);
+            
+            previewImage.src = resizedImage;
+            downloadBtn.style.display = 'block';
+            
+            // Store resized image data for download
+            downloadBtn.onclick = () => {
+                const link = document.createElement('a');
+                link.download = 'resized-image.jpg';
+                link.href = resizedImage;
+                link.click();
+            };
+        });
+    </script>
 </body>
 </html>
